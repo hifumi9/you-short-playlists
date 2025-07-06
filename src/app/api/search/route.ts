@@ -33,12 +33,21 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
-    const videos = data.items?.map((item: { id: { videoId: string }, snippet: { title: string, thumbnails: { medium: { url: string } } } }) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      thumbnail: item.snippet.thumbnails.medium.url,
-      url: `https://www.youtube.com/watch?v=${item.id.videoId}`
-    })) || [];
+    const videos = data.items?.map((item: { id: { videoId: string }, snippet: { title: string, thumbnails: { maxres?: { url: string }, high?: { url: string }, medium?: { url: string }, default?: { url: string } } } }) => {
+      // 高品質なサムネイルを優先的に取得（maxres > high > medium > default）
+      const thumbnails = item.snippet.thumbnails;
+      const thumbnailUrl = thumbnails.maxres?.url || 
+                          thumbnails.high?.url || 
+                          thumbnails.medium?.url || 
+                          thumbnails.default?.url;
+      
+      return {
+        id: item.id.videoId,
+        title: item.snippet.title,
+        thumbnail: thumbnailUrl,
+        url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+      };
+    }) || [];
 
     return NextResponse.json({ videos });
   } catch (error) {
