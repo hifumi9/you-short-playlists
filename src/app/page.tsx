@@ -1,103 +1,161 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { Box, Button, Input, VStack, HStack, Text, Container, SimpleGrid, Card, CardBody, Alert, AlertIcon } from "@yamada-ui/react";
+
+interface VideoData {
+  id: string;
+  title: string;
+  thumbnail: string;
+  url: string;
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [keyword, setKeyword] = useState("");
+  const [videos, setVideos] = useState<VideoData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const searchVideos = async () => {
+    if (!keyword.trim()) return;
+    
+    setLoading(true);
+    setError("");
+    
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(keyword)}`);
+      const data = await response.json();
+      
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setVideos(data.videos);
+      }
+    } catch {
+      setError("検索中にエラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nextVideo = () => {
+    setCurrentVideoIndex((prev) => (prev + 1) % videos.length);
+  };
+
+  const prevVideo = () => {
+    setCurrentVideoIndex((prev) => (prev - 1 + videos.length) % videos.length);
+  };
+
+  return (
+    <Container maxW="container.lg" py={8}>
+      <VStack gap={8}>
+        <Box textAlign="center">
+          <Text fontSize="3xl" fontWeight="bold" mb={2}>
+            YouTube Short Playlists
+          </Text>
+          <Text color="gray.600">
+            キーワードでYouTube Shortを検索してプレイリストを作成
+          </Text>
+        </Box>
+
+        <Box w="full" maxW="500px">
+          <HStack>
+            <Input
+              placeholder="キーワードを入力..."
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchVideos()}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <Button onClick={searchVideos} loading={loading}>
+              検索
+            </Button>
+          </HStack>
+        </Box>
+
+        {error && (
+          <Alert status="error">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
+
+        {videos.length > 0 && (
+          <VStack gap={6} w="full">
+            <Box w="full" maxW="600px">
+              <Card>
+                <CardBody>
+                  <VStack gap={4}>
+                    <Box w="full" h="400px" position="relative">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${videos[currentVideoIndex]?.id}`}
+                        title={videos[currentVideoIndex]?.title}
+                        style={{ border: "none" }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </Box>
+                    <Text fontSize="lg" fontWeight="bold">
+                      {videos[currentVideoIndex]?.title}
+                    </Text>
+                    <HStack gap={4}>
+                      <Button onClick={prevVideo} disabled={videos.length <= 1}>
+                        前へ
+                      </Button>
+                      <Text>
+                        {currentVideoIndex + 1} / {videos.length}
+                      </Text>
+                      <Button onClick={nextVideo} disabled={videos.length <= 1}>
+                        次へ
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </Box>
+
+            <Box w="full">
+              <Text fontSize="xl" fontWeight="bold" mb={4}>
+                プレイリスト
+              </Text>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4}>
+                {videos.map((video, index) => (
+                  <Card
+                    key={video.id}
+                    cursor="pointer"
+                    onClick={() => setCurrentVideoIndex(index)}
+                    bg={index === currentVideoIndex ? "blue.50" : "white"}
+                    borderColor={index === currentVideoIndex ? "blue.500" : "gray.200"}
+                    _hover={{ bg: "gray.50" }}
+                  >
+                    <CardBody>
+                      <VStack gap={2}>
+                        <Box w="full" h="120px" position="relative">
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        </Box>
+                        <Text fontSize="sm" fontWeight="medium" textAlign="center" isTruncated>
+                          {video.title}
+                        </Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                ))}
+              </SimpleGrid>
+            </Box>
+          </VStack>
+        )}
+      </VStack>
+    </Container>
   );
 }
